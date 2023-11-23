@@ -1,4 +1,4 @@
-# p8-webrtc-video
+# p10-webrtc-video
 
 Repositorio de plantilla para la práctica 10 (WebRTC video) de PTAVI.
 
