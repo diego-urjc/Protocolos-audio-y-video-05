@@ -1,0 +1,48 @@
+v=0
+o=- 3942393637 3942393637 IN IP4 0.0.0.0
+s=-
+t=0 0
+a=group:BUNDLE 0
+a=msid-semantic:WMS *
+m=video 39617 UDP/TLS/RTP/SAVPF 97 98 99 100 101 102
+c=IN IP4 212.128.254.59
+a=recvonly
+a=extmap:1 urn:ietf:params:rtp-hdrext:sdes:mid
+a=extmap:3 http://www.webrtc.org/experiments/rtp-hdrext/abs-send-time
+a=mid:0
+a=msid:759e4c72-ceec-475a-ae53-a7338588ac74 2b5b09a6-7884-4ac1-9a70-eea228f1ec15
+a=rtcp:9 IN IP4 0.0.0.0
+a=rtcp-mux
+a=ssrc-group:FID 1327630603 880631835
+a=ssrc:1327630603 cname:944ea549-4d52-4556-8789-8dd33d7d3917
+a=ssrc:880631835 cname:944ea549-4d52-4556-8789-8dd33d7d3917
+a=rtpmap:97 VP8/90000
+a=rtcp-fb:97 nack
+a=rtcp-fb:97 nack pli
+a=rtcp-fb:97 goog-remb
+a=rtpmap:98 rtx/90000
+a=fmtp:98 apt=97
+a=rtpmap:99 H264/90000
+a=rtcp-fb:99 nack
+a=rtcp-fb:99 nack pli
+a=rtcp-fb:99 goog-remb
+a=fmtp:99 level-asymmetry-allowed=1;packetization-mode=1;profile-level-id=42001f
+a=rtpmap:100 rtx/90000
+a=fmtp:100 apt=99
+a=rtpmap:101 H264/90000
+a=rtcp-fb:101 nack
+a=rtcp-fb:101 nack pli
+a=rtcp-fb:101 goog-remb
+a=fmtp:101 level-asymmetry-allowed=1;packetization-mode=1;profile-level-id=42e01f
+a=rtpmap:102 rtx/90000
+a=fmtp:102 apt=101
+a=candidate:e4ec4c900b71121f465fa101b8e1f85a 1 udp 2130706431 212.128.254.59 39617 typ host
+a=candidate:580b5f32035da7f14a30ea7a8d826c67 1 udp 2130706431 172.17.0.1 51098 typ host
+a=candidate:7f8149c2cc6c4bedaf775d26f62ae557 1 udp 1694498815 212.128.254.59 39617 typ srflx raddr 212.128.254.59 rport 39617
+a=candidate:0ad8db753210ce9554cf251a9e51e792 1 udp 1694498815 212.128.254.59 51098 typ srflx raddr 172.17.0.1 rport 51098
+a=end-of-candidates
+a=ice-ufrag:Mu2A
+a=ice-pwd:kfyZL39GBbnnZuGYb31Vgm
+a=fingerprint:sha-256 1C:1E:9B:FA:71:F7:D9:14:B0:57:35:35:0E:AC:EF:CA:7B:0F:55:47:4F:AC:F7:2E:9E:F2:62:62:42:A2:78:05
+a=setup:active
+
