@@ -33,14 +33,21 @@ class VideoServerProtocol(asyncio.DatagramProtocol):
     async def handle_offer(self, message, addr):
         # Crear nueva instancia de RTCPeerConnection y MediaRecorder para cada cliente
         pc = RTCPeerConnection()
-        recorder = MediaRecorder(f"video-{addr[1]}.mp4")  # Guardar video con puerto único del cliente
+        recorder = MediaRecorder("video-out.mp4")  # Guardar video con puerto único del cliente
 
         @pc.on("track")
-        def on_track(track):
+        async def on_track(track):
             print(f"Recibiendo video del cliente {addr}...")
             recorder.addTrack(track)
+            print("Track añadido al recorder")
+            await recorder.start()
+            print("Grabación iniciada")
 
-        await recorder.start()
+            @track.on("ended")
+            async def on_ended():
+                print(f"Track terminado para el cliente {addr}. Deteniendo grabación...")
+                await recorder.stop()  # Detener la grabación y finalizar el archivo
+                print(f"Grabación finalizada y guardada como 'video-out.mp4'.")
 
         # Configurar conexión WebRTC
         offer = RTCSessionDescription(message["sdp"], message["type"])

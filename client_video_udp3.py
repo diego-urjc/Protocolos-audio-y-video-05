@@ -38,8 +38,7 @@ class ClientProtocol(asyncio.DatagramProtocol):
         print("-- Enviado mensaje 'bye' --")
         self.video_done_future.set_result(True)
 
-    def error_received(self, exc):
-        print(f"Error recibido: {exc}")
+
 
     def connection_lost(self, exc):
         print("Conexión perdida con el servidor de señalización.")

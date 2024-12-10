@@ -15,7 +15,7 @@ class SignallingServer:
             lambda: self,
             local_addr=(self.host, self.port),
         )
-        print("Servidor listo para recibir mensajes.")
+
 
     def connection_made(self, transport):
         """Se llama cuando se establece la conexión."""
