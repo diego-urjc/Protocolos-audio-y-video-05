@@ -77,7 +77,7 @@ async def main():
     await video_done_future
 
     # Cerrar el canal de video y la conexión WebRTC
-    print("Cerrando conexión...")
+    print("Cerrando conexion...")
     await pc.close()
 
 
