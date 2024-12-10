@@ -31,6 +31,8 @@ class ClientProtocol(asyncio.DatagramProtocol):
         await self.pc.setRemoteDescription(answer)
         print("-- Conexión establecida con el servidor de video --")
 
+
+
     def error_received(self, exc):
         print(f"Error recibido: {exc}")
 
@@ -46,14 +48,6 @@ async def main():
     pc = RTCPeerConnection()
     player = MediaPlayer("video.webm")
     pc.addTrack(player.video)
-    video_done_future = asyncio.Future()
-
-    # Configurar evento "ended" para saber cuándo termina el video
-    def on_ended():
-        print("-- Video terminado --")
-        video_done_future.set_result(True)
-
-    player.video.add_listener("ended", on_ended)
 
     # Crear oferta SDP
     offer = await pc.createOffer()
@@ -63,18 +57,25 @@ async def main():
     # Crear transporte UDP con protocolo de cliente
     loop = asyncio.get_event_loop()
     transport, protocol = await loop.create_datagram_endpoint(
-        lambda: ClientProtocol(pc, offer_message, video_done_future),
+        lambda: ClientProtocol(pc, offer_message, asyncio.Future()),
         remote_addr=(signalling_host, signalling_port),
         local_addr=("0.0.0.0", 54321),  # Puerto fijo donde escucha este cliente
     )
 
-    # Esperar hasta que el video termine de enviarse
-    await video_done_future
+    # Monitorear fin del video
+    @player.video.on("ended")
+    async def on_video_ended():
+        print("Video terminado. Cerrando conexión...")
+        await pc.close()
+        protocol.video_done_future.set_result(True)
 
-    # Cerrar el canal de video y la conexión WebRTC
-    print("Cerrando conexión...")
-    await pc.close()
-    player.video.stop()
+    # Esperar hasta que el video termine de enviarse
+    await protocol.video_done_future
+
+    # Cerrar el transporte
+    transport.close()
+    print("Conexión cerrada.")
+
 
 
 if __name__ == "__main__":
