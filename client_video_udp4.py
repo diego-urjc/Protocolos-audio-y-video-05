@@ -1,45 +1,39 @@
 import asyncio
 import json
-import random
 from aiortc import RTCPeerConnection, RTCSessionDescription
 from aiortc.contrib.media import MediaPlayer
+import random
+
 
 class ClientProtocol(asyncio.DatagramProtocol):
-    def __init__(self, pc, offer, video_done_future):
-        self.pc = pc
-        self.offer = offer
+    def __init__(self, offer, video_done_future):
+        self.offer = offer  # Oferta inicializada en el constructor
         self.video_done_future = video_done_future
         self.server_address = None
+        self.connection = None
 
     def connection_made(self, transport):
         self.transport = transport
         print("Conexión con el servidor de señalización establecida.")
-
-        # Enviar oferta al servidor de señalización
         self.transport.sendto(json.dumps(self.offer).encode(), self.server_address)
         print("Enviada oferta al servidor de señalización.")
 
     def datagram_received(self, data, addr):
-        """Se llama cuando se recibe un mensaje del servidor de señalización."""
         message = json.loads(data.decode())
         if message["type"] == "answer":
-            print("Respuesta recibida del servidor de video. Procesando...")
+            print(f"Respuesta recibida del servidor de video. Procesando...")
             asyncio.create_task(self.handle_answer(message))
 
     async def handle_answer(self, message):
         answer = RTCSessionDescription(message["sdp"], message["type"])
-        await self.pc.setRemoteDescription(answer)
+        await self.connection.setRemoteDescription(answer)
         print("-- Conexión establecida con el servidor de video --")
 
     def send_bye(self):
-        # Enviar mensaje "bye" al servidor
         bye_message = {"type": "bye"}
         self.transport.sendto(json.dumps(bye_message).encode(), self.server_address)
         print("-- Enviado mensaje 'bye' --")
         self.video_done_future.set_result(True)
-
-    def error_received(self, exc):
-        print(f"Error recibido: {exc}")
 
     def connection_lost(self, exc):
         print("Conexión perdida con el servidor de señalización.")
@@ -49,39 +43,32 @@ async def main():
     signalling_host = "127.0.0.1"
     signalling_port = 9999
 
-    loop = asyncio.get_event_loop()
-
-    # Configuración WebRTC
     pc = RTCPeerConnection()
     player = MediaPlayer("video.webm")
     pc.addTrack(player.video)
     video_done_future = asyncio.Future()
 
-    # Asigna un puerto aleatorio entre 50000 y 60000 para el cliente
-    local_port = random.randint(50000, 60000)
-
-    # Crea la oferta SDP
     offer = await pc.createOffer()
     await pc.setLocalDescription(offer)
-    offer_message = {"type": "offer", "sdp": pc.localDescription.sdp}
 
-    # Crear transporte UDP con protocolo de cliente y puerto dinámico
+    local_port = random.randint(50000, 60000)
+    offer_message = {"type": "offer", "sdp": pc.localDescription.sdp, "client_port": local_port}
+
+    loop = asyncio.get_event_loop()
     transport, protocol = await loop.create_datagram_endpoint(
-        lambda: ClientProtocol(pc, offer_message, video_done_future),
+        lambda: ClientProtocol(offer_message, video_done_future),  # Pasar la oferta al protocolo
         remote_addr=(signalling_host, signalling_port),
-        local_addr=("0.0.0.0", local_port)  # Asigna un puerto único dinámicamente
+        local_addr=("0.0.0.0", local_port),
     )
 
-    # Configurar evento "ended" para saber cuándo termina el video
+    protocol.connection = pc
+    protocol.server_address = (signalling_host, signalling_port)
+
     @player.video.on("ended")
     def on_video_end():
         protocol.send_bye()
 
-    # Esperar hasta que el video termine de enviarse
     await video_done_future
-
-    # Cerrar el canal de video y la conexión WebRTC
-    print("Cerrando conexión...")
     await pc.close()
 
 

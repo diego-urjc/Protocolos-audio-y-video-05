@@ -1,76 +1,72 @@
 import asyncio
 import json
 
-class SignallingServer:
-    def __init__(self, host="0.0.0.0", port=9999):
-        self.host = host
-        self.port = port
-        self.server_address = None  # Dirección del servidor de video registrado
-        self.client_to_server = {}  # Mapear clientes a servidores de video
-        self.server_to_client = {}  # Mapear servidores a clientes
+counter = 0
 
-    async def start_server(self):
-        print(f"Iniciando servidor de señalización en {self.host}:{self.port}...")
-        self.transport, self.protocol = await asyncio.get_event_loop().create_datagram_endpoint(
-            lambda: self,
-            local_addr=(self.host, self.port),
-        )
-        print("Servidor listo para recibir mensajes.")
-
-    def datagram_received(self, data, addr):
-        asyncio.create_task(self.handle_message(data, addr))
+class SignallingServerProtocol(asyncio.DatagramProtocol):
+    def __init__(self):
+        self.clients = {}  # Diccionario de clientes y servidores asociados {cliente: servidor}
+        self.servers = set()  # Lista de servidores de video registrados
 
     def connection_made(self, transport):
-        """Se llama cuando se establece la conexión."""
         self.transport = transport
+        print("Servidor de señalización iniciado.")
 
-    async def handle_message(self, data, addr):
-        try:
-            message = json.loads(data.decode())
-            message_type = message.get("type")
+    def datagram_received(self, data, addr):
+        global counter
 
-            if message_type == "REGISTER":
-                self.server_address = addr
-                print(f"Servidor de video registrado desde {addr}")
+        message = json.loads(data.decode())
+        message_type = message["type"]
 
-            elif message_type == "offer":
-                if self.server_address:
-                    self.client_to_server[addr] = self.server_address
-                    self.server_to_client[self.server_address] = addr
-                    self.transport.sendto(data, self.server_address)
-                    print(f"Oferta reenviada de {addr} al servidor {self.server_address}")
+        if message_type == "REGISTER":
+            self.servers.add(addr)
+            print(f"Servidor de video registrado desde {addr}")
 
-            elif message_type == "answer":
-                client_address = self.server_to_client.get(addr)
-                if client_address:
-                    self.transport.sendto(data, client_address)
-                    print(f"Respuesta reenviada del servidor {addr} al cliente {client_address}")
+        elif message_type == "offer":
+            server_address = next(iter(self.servers), None)
+            if server_address:
+                self.clients[addr] = server_address
+                self.transport.sendto(data, server_address)
+                print(f"Reenviado mensaje 'offer' del cliente {addr} al servidor {server_address}")
+            else:
+                print("No hay servidores de video registrados.")
 
-            elif message_type == "bye":
-                server_address = self.client_to_server.pop(addr, None)
-                if server_address:
-                    self.transport.sendto(data, server_address)
-                    print(f"Mensaje 'bye' reenviado de {addr} al servidor {server_address}")
 
-        except json.JSONDecodeError:
-            print(f"Error al decodificar mensaje desde {addr}: {data.decode()}")
+        elif message_type == "answer":
+            # Obtener todos los clientes asociados al servidor
+            matching_clients = [client for client, server in self.clients.items() if server == addr]
 
-    def error_received(self, exc):
-        print(f"Error recibido: {exc}")
+            if matching_clients:
+                # Seleccionar el cliente correcto (podemos usar un criterio adicional si es necesario)
+                client_address = matching_clients[counter]
+                counter += 1  # Por ahora seleccionamos el primero
+                self.transport.sendto(data, client_address)
+                print(f"Reenviado mensaje 'answer' del servidor {addr} al cliente {client_address}")
+            else:
+                print(f"No se encontró cliente asociado a la dirección {addr}.")
 
-    def connection_lost(self, exc):
-        print("Conexión perdida con el servidor de señalización.")
+
+        elif message_type == "bye":
+            self.clients.pop(addr, None)
+            print(f"Mensaje 'bye' procesado para cliente {addr}.")
 
 
 async def main():
-    server = SignallingServer()
-    await server.start_server()
+    signalling_host = "0.0.0.0"
+    signalling_port = 9999
 
+    loop = asyncio.get_event_loop()
+    transport, protocol = await loop.create_datagram_endpoint(
+        lambda: SignallingServerProtocol(),
+        local_addr=(signalling_host, signalling_port),
+    )
+
+    print(f"Iniciando servidor de señalización en {signalling_host}:{signalling_port}...")
     try:
         while True:
             await asyncio.sleep(3600)
     except KeyboardInterrupt:
-        print("\nServidor detenido manualmente.")
+        print("Servidor detenido manualmente.")
 
 
 if __name__ == "__main__":
