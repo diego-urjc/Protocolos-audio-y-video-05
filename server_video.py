@@ -76,6 +76,6 @@ async def main():
     pc.close()
 
 
-# comentario para poder hacer commit de nuevo
+# comentario para poder hacer commit de
 if __name__ == "__main__":
     asyncio.run(main())
