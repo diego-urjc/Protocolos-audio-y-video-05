@@ -79,6 +79,7 @@ async def main():
     # Cerrar el canal de video y la conexión WebRTC
     print("Cerrando conexion...")
     await pc.close()
+#comentario para hacer commit
 
 
 if __name__ == "__main__":
