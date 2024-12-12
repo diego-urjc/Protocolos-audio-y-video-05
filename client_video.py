@@ -98,6 +98,7 @@ async def main():
     print("{ \"type\": \"bye\" }")
     # Cierra la peer connection para terminar
     await pc.close()
+    #comentario para poder hacer commit de nuevo
 
 if __name__ == "__main__":
     asyncio.run(main())
